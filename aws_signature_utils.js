@@ -1,3 +1,34 @@
+/*
+  This class is used to generate signatures for
+    Amazon Flexible Payment Service
+
+  About Amazon FPS Signatures
+    http://docs.aws.amazon.com/AmazonFPS/2010-08-28/FPSAggregatedGuide/APPNDX_GeneratingaSignature.html
+
+  To use:
+    AWSSignatureUtils.sign_parameters(aws_params)
+
+  where aws_params has at least these params:
+
+    var aws_params = {
+      aws_endpoint : '',
+      aws_secret_key : '',
+      uri : '',
+      verb : '',
+      host : '',
+      parameters : {
+        signatureVersion : '',
+        signatureMethod : '',
+        accessKey : ''
+      }
+    };
+
+    and optional params from http://docs.aws.amazon.com/AmazonFPS/2010-08-28/FPSBasicGuide/GenericParameters.html
+
+  see test.js for an example
+    https://github.com/theRemix/aws_signature_utils_js/blob/master/test.js
+
+*/
 'use strict';
 
 var crypto = require('crypto'),
@@ -5,34 +36,14 @@ var crypto = require('crypto'),
 AWSSignatureUtils = {
 
   AWS_SECRET_KEY_NAME : "aws_secret_key",
-  SIGNATURE_KEYNAME : "Signature",
-  SIGNATURE_METHOD_KEYNAME : "SignatureMethod",
-  SIGNATURE_VERSION_KEYNAME : "SignatureVersion",
+  SIGNATURE_KEYNAME : "signature",
+  SIGNATURE_METHOD_KEYNAME : "signatureMethod",
+  SIGNATURE_VERSION_KEYNAME : "signatureVersion",
   HMAC_SHA256_ALGORITHM : "HmacSHA256",
   HMAC_SHA1_ALGORITHM : "HmacSHA1",
 
   // public
-
-  /*
-    AWSSignatureUtils.sign_parameters({
-      aws_secret_key : '12345',
-      uri : '',
-      verb : '',
-      host : '',
-      parameters : {
-        SignatureVersion : '2',
-        SignatureMethod : 'HmacSHA256',
-        
-        transactionAmount : '5.00',
-        returnURL : 'http%3A%2F%2Fgoogle.dev%2Fpayments%3FPaymentAmount%3D05.00%26Download%3DPrice%26ProductID%3D1183401134535',
-        pipelineName : 'SingleUse',
-        callerKey : 'D0fwd4k4VasCuf/S/BEHFvphWQGwy0yyT3wVjhxT',
-        callerReference : 'Product54321',
-        paymentReason : 'Digital Download Payment'
-        
-      }
-    });
-  */
+  
   sign_parameters : function(args){
     var signature_version = args.parameters[AWSSignatureUtils.SIGNATURE_VERSION_KEYNAME];
     var string_to_sign = "";
@@ -45,15 +56,14 @@ AWSSignatureUtils = {
     } else {
       throw "Invalid Signature Version specified";
     }
+    
     return AWSSignatureUtils.compute_signature(string_to_sign, args[AWSSignatureUtils.AWS_SECRET_KEY_NAME], algorithm);
   },
 
   // Convert a string into URL encoded form.
   urlencode : function(plaintext){
-    return encodeURIComponent(plaintext.replace(/~/g, "%7E"));
+    return encodeURIComponent(plaintext).replace(/~/g, "%7E"); // encodeURI(plaintext.replace(/~/g, "%7E"); //.replace(/\//g, "%2F"));
   },
-
-
 
   // private
 
@@ -61,12 +71,10 @@ AWSSignatureUtils = {
     var parameters = args.parameters;
 
     // exclude any existing Signature parameter from the canonical string
-    for (var p in parameters){
-      if(p.indexOf(AWSSignatureUtils.SIGNATURE_KEYNAME) === 0){
-        delete parameters[p];
-      }
+    if(parameters.hasOwnProperty(AWSSignatureUtils.SIGNATURE_KEYNAME)){
+      delete parameters[AWSSignatureUtils.SIGNATURE_KEYNAME];
     }
-
+    
     var sorted_pairs = [];
     Object.keys(parameters).sort().forEach(function (v, i) {
       sorted_pairs.push(v + '=' + parameters[v]);
@@ -78,22 +86,19 @@ AWSSignatureUtils = {
   calculate_string_to_sign_v2 : function(args){
     var parameters = args.parameters;
 
+    // exclude any existing Signature parameter from the canonical string
+    if(parameters.hasOwnProperty(AWSSignatureUtils.SIGNATURE_KEYNAME)){
+      delete parameters[AWSSignatureUtils.SIGNATURE_KEYNAME];
+    }
+
     var uri = '/';
     if(args.uri !== undefined && args.uri.length > 0){
       uri = args.uri;
     }
-    uri = AWSSignatureUtils.urlencode(uri).replace(/\//g, "%2F");
+    uri = encodeURI(uri);
 
     var verb = args.verb;
     var host = args.host.toLowerCase();
-
-
-    // exclude any existing Signature parameter from the canonical string
-    for (var p in parameters){
-      if(p.indexOf(AWSSignatureUtils.SIGNATURE_KEYNAME) === 0){
-        delete parameters[p];
-      }
-    }
 
     var canonical = verb + "\n" + host + "\n" + uri + "\n";
     
