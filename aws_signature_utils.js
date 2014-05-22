@@ -36,9 +36,9 @@ var crypto = require('crypto'),
 AWSSignatureUtils = {
 
   AWS_SECRET_KEY_NAME : "aws_secret_key",
-  SIGNATURE_KEYNAME : "signature",
-  SIGNATURE_METHOD_KEYNAME : "signatureMethod",
-  SIGNATURE_VERSION_KEYNAME : "signatureVersion",
+  SIGNATURE_KEYNAME : "Signature",
+  SIGNATURE_METHOD_KEYNAME : "SignatureMethod",
+  SIGNATURE_VERSION_KEYNAME : "SignatureVersion",
   HMAC_SHA256_ALGORITHM : "HmacSHA256",
   HMAC_SHA1_ALGORITHM : "HmacSHA1",
 
